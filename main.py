@@ -11,7 +11,8 @@ from pystray import Icon, MenuItem, Menu
 from threading import Thread
 from screeninfo import get_monitors
 from ctypes import wintypes, windll
-import settings
+from settings import Settings
+import settings_utils
 import ui_helper
 
 
@@ -21,6 +22,7 @@ Geometry = "400x380+" + str(int(screen_width/2) - 200) + '+' + str(int(screen_he
 selected_app = "0"
 windowList, saveList, monitors = [], {}, {}
 exact_match, selected_monitor, tray_icon = False, None, None
+my_settings = Settings()
 
 # Get monitor info from screeninfo
 for index, m in enumerate(get_monitors()):
@@ -251,7 +253,7 @@ def set_startup(startup):
             pass
     reg.CloseKey(open_key)
 
-current_settings = settings.load_settings()
+current_settings = settings_utils.load_settings()
 saveList = current_settings["apps"]
 ctk.set_appearance_mode(current_settings["theme"])
 ctk.set_default_color_theme("blue")  # Themes: "blue" / "green" / "dark-blue"
@@ -316,11 +318,13 @@ buttons_frame2.grid()
 toggle_mode = ctk.CTkLabel(buttons_frame2, text="Appearance Mode:", anchor="w")
 toggle_mode.grid(row=1, column=0, padx=5, pady=5)
 
-toggle_mode_options = ctk.CTkOptionMenu(buttons_frame2, values=["System", "Light", "Dark"], command=change_appearance_mode_event, width=100, height=22)
+toggle_mode_options = ctk.CTkOptionMenu(buttons_frame2, values=my_settings.available_themes, command=change_appearance_mode_event, width=100, height=22)
 toggle_mode_options.grid(row=1, column=1, padx=10, pady=5)
 toggle_mode_options.set(current_settings["theme"])
 
 Thread(target=update_window_list).start()
+
+print(my_settings.start_with_system)
 
 panel.bind('<Unmap>', minimize_to_tray)
 panel.mainloop()
