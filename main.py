@@ -11,16 +11,8 @@ from pystray import Icon, MenuItem, Menu
 from threading import Thread
 from screeninfo import get_monitors
 from ctypes import wintypes, windll
+import settings
 
-def get_documents_folder():
-    CSIDL_PERSONAL = 5
-    SHGFP_TYPE_CURRENT = 0
-    buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
-    windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, SHGFP_TYPE_CURRENT, buf)
-    return buf.value
-
-DOCUMENTS_FOLDER = os.path.join(get_documents_folder(), "NoMoreBorder")
-SETTINGS_FILE_PATH = os.path.join(DOCUMENTS_FOLDER, "settings.json")
 
 user32 = ctypes.windll.user32
 # user32.SetProcessDPIAware()
@@ -75,62 +67,26 @@ def refresh_window_list():
     windowList_strings = [title for hwnd, title in windowList]
     window_list_dropdown.configure(values=windowList_strings)
 
-def load_settings():
-    if not os.path.exists(DOCUMENTS_FOLDER):
-        os.makedirs(DOCUMENTS_FOLDER)
-
-    try:
-        with open(SETTINGS_FILE_PATH, "r") as f:
-            settings = json.load(f)
-            if isinstance(settings["apps"], list):
-                settings["apps"] = {app: {
-                    "monitor": "Display 1 (Primary)",
-                    "resolution": "Use Display Resolution",
-                    "x_offset": "0",
-                    "y_offset": "0",
-                    "width": "1920",
-                    "height": "1080"
-                } for app in settings["apps"]}
-                save_settings(settings)
-            if "start_with_windows" not in settings:
-                settings["start_with_windows"] = False
-            return settings
-    except:
-        return {"theme": "System", "apps": {}, "start_with_windows": False}
-
-
-def save_settings(settings):
-    try:
-        with open(SETTINGS_FILE_PATH, "w") as f:
-            json.dump(settings, f, indent=4)
-    except:
-        pass
-
 def exact_match_event():
     global exact_match_check, exact_match
     exact_match = exact_match_check.get() == 1
 
 def change_start_with_windows_event():
     global check_box
-    settings = load_settings()
+    settings = settings.load_settings()
     start_with_windows = check_box.get() == 1
     settings["start_with_windows"] = start_with_windows
     set_startup(start_with_windows)
-    save_settings(settings)
+    settings.save_settings(settings)
 
-def update_theme(new_theme):
-    settings = load_settings()
-    settings["theme"] = new_theme
-    save_settings(settings)
-
-def update_apps(new_apps):
-    settings = load_settings()
-    settings["apps"] = new_apps
-    save_settings(settings)
+def update_element(elem_name, elem_ref):
+    settings = settings.load_settings()
+    settings[elem_name] = elem_ref
+    settings.save_settings(settings)
 
 def change_appearance_mode_event(new_appearance_mode: str):
     ctk.set_appearance_mode(new_appearance_mode)
-    update_theme(new_appearance_mode)
+    update_element("theme", new_appearance_mode)
 
 
 def combo_answer(choice):
@@ -245,7 +201,7 @@ def restore_window():
 
         if app_name in saveList:
             saveList.pop(app_name)
-            update_apps(saveList)
+            update_element("apps", saveList)
 
 def on_quit(icon, item):
     icon.stop()
@@ -307,7 +263,7 @@ def set_startup(startup):
             pass
     reg.CloseKey(open_key)
 
-current_settings = load_settings()
+current_settings = settings.load_settings()
 saveList = current_settings["apps"]
 ctk.set_appearance_mode(current_settings["theme"])
 ctk.set_default_color_theme("blue")  # Themes: "blue" / "green" / "dark-blue"
