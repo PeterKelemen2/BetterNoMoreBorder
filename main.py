@@ -12,20 +12,15 @@ from threading import Thread
 from screeninfo import get_monitors
 from ctypes import wintypes, windll
 import settings
+import ui_helper
 
 
 user32 = ctypes.windll.user32
-# user32.SetProcessDPIAware()
-screen_width = user32.GetSystemMetrics(0)
-screen_height = user32.GetSystemMetrics(1)
+screen_width, screen_height = user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)
 Geometry = "400x380+" + str(int(screen_width/2) - 200) + '+' + str(int(screen_height/2) - 200)
-windowList = []
-saveList = {}
 selected_app = "0"
-exact_match = False
-monitors = {}
-selected_monitor = None
-tray_icon = None
+windowList, saveList, monitors = [], {}, {}
+exact_match, selected_monitor, tray_icon = False, None, None
 
 # Get monitor info from screeninfo
 for index, m in enumerate(get_monitors()):
@@ -167,15 +162,8 @@ def make_borderless(app_name=None, write_needed=True):
             saveList[app_name]["pre_win_height"] = pre_win_height
             saveList[app_name]["pre_win_width"] = pre_win_width
             saveList[app_name]["exact_match"] = exact_match
-            update_apps(saveList)
-        else:
-            # saveList[app_name]["monitor"] = selected_monitor
-            # saveList[app_name]["x_offset"] = custom_x_offset.get()
-            # saveList[app_name]["y_offset"] = custom_y_offset.get()
-            # saveList[app_name]["width"] = custom_width.get()
-            # saveList[app_name]["height"] = custom_height.get()
-            # update_apps(saveList)
-            pass
+            update_element("apps", saveList)
+
     except win32gui.error as e:
         if e.winerror == 1400:
             print(e)
@@ -304,17 +292,10 @@ custom_height = StringVar(value=str(monitors[selected_monitor].height))
 custom_res_frame = ctk.CTkFrame(panel, fg_color="transparent")
 custom_res_frame.grid(pady=5)
 
-ctk.CTkLabel(custom_res_frame, text="X Offset:", anchor="w").grid(row=0, column=0, padx=5, pady=5)
-ctk.CTkEntry(custom_res_frame, textvariable=custom_x_offset, width=50).grid(row=0, column=1, padx=5, pady=5)
-
-ctk.CTkLabel(custom_res_frame, text="Y Offset:", anchor="w").grid(row=0, column=2, padx=5, pady=5)
-ctk.CTkEntry(custom_res_frame, textvariable=custom_y_offset, width=50).grid(row=0, column=3, padx=5, pady=5)
-
-ctk.CTkLabel(custom_res_frame, text="Width:", anchor="w").grid(row=1, column=0, padx=5)
-ctk.CTkEntry(custom_res_frame, textvariable=custom_width, width=50).grid(row=1, column=1, padx=5)
-
-ctk.CTkLabel(custom_res_frame, text="Height:", anchor="w").grid(row=1, column=2, padx=5)
-ctk.CTkEntry(custom_res_frame, textvariable=custom_height, width=50).grid(row=1, column=3, padx=5)
+ui_helper.add_entry_with_label(custom_res_frame, "X Offset:", custom_x_offset, 0,0)
+ui_helper.add_entry_with_label(custom_res_frame, "Width:", custom_y_offset, row=0,col=2)
+ui_helper.add_entry_with_label(custom_res_frame, "Width:", custom_width, row=1,col=0)
+ui_helper.add_entry_with_label(custom_res_frame, "Height:", custom_height, row=1,col=2)
 
 buttons_frame = ctk.CTkFrame(panel, fg_color="transparent")
 buttons_frame.grid(pady=5)
